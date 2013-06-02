@@ -56,10 +56,27 @@
     <WarningLevel>4</WarningLevel>
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
-    <PropertyGroup>
-    <SignAssembly>true</SignAssembly>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug_signed|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE;SIGN</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
-  <PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release_signed|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE;SIGN</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Debug_signed' OR '$(Configuration)' == 'Release_signed' ">
+    <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>strongnamekey.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
@@ -106,7 +123,7 @@
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
        Other similar extension points exist, see Microsoft.Common.targets.
-  <ItemGroup>
+  <ItemGroup Condition=" '$(Configuration)' == 'Debug_signed' OR '$(Configuration)' == 'Release_signed' ">
     <None Include="..\strongnamekey.snk">
       <Link>strongnamekey.snk</Link>
     </None>
