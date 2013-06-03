@@ -2,7 +2,6 @@
 using System.Resources;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Ionic.Zlib.Properties;
 
 // General Information about an assembly is controlled through the following
 // set of attributes. Change these attribute values to modify the information
@@ -29,6 +28,3 @@ using Ionic.Zlib.Properties;
 // [assembly: AssemblyVersion("1.0.*")]
 [assembly: AssemblyVersion("1.9.1.9000")]
 [assembly: AssemblyFileVersion("1.9.1.9000")]
-
-// needed for strong naming
-[assembly: Guid("996C3E38-3AAB-4701-9DE0-E15C3F3B9089")]
