@@ -3,16 +3,12 @@ using System.IO.Compression;
 using System.Text;
 using System.Collections.Generic;
 using Ionic.Zlib;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.IO;
+using NUnit.Framework;
+using System.Reflection;
 
 namespace Ionic.Zlib.Tests
 {
-    /// <summary>
-    /// Summary description for UnitTest1
-    /// </summary>
-    [TestClass]
     public class UnitTest1
     {
         System.Random rnd;
@@ -36,76 +32,25 @@ namespace Ionic.Zlib.Tests
                                                StringSplitOptions.RemoveEmptyEntries);
         }
 
-
-        private TestContext testContextInstance;
-
-        /// <summary>
-        ///Gets or sets the test context which provides
-        ///information about and functionality for the current test run.
-        ///</summary>
-        public TestContext TestContext
-        {
-            get
-            {
-                return testContextInstance;
-            }
-            set
-            {
-                testContextInstance = value;
-            }
-        }
-
-        #region Additional test attributes
-        //
-        // You can use the following additional attributes as you write your tests:
-        //
-        // Use ClassInitialize to run code before running the first test in the class
-        // [ClassInitialize()]
-        // public static void MyClassInitialize(TestContext testContext) { }
-        //
-        // Use ClassCleanup to run code after all tests in a class have run
-        // [ClassCleanup()]
-        // public static void MyClassCleanup() { }
-        //
-        // Use TestInitialize to run code before running each test
-        // [TestInitialize()]
-        // public void MyTestInitialize() { }
-        //
-        // Use TestCleanup to run code after each test has run
-        // [TestCleanup()]
-        // public void MyTestCleanup() { }
-        //
-
-        private string CurrentDir = null;
         private string TopLevelDir = null;
 
         // Use TestInitialize to run code before running each test
-        [TestInitialize()]
+        [SetUp]
         public void MyTestInitialize()
         {
-            CurrentDir = System.IO.Directory.GetCurrentDirectory();
-            Assert.AreNotEqual<string>(System.IO.Path2.GetFileName(CurrentDir), "Temp", "at start");
+            string parentDir = GetTestBinDir();
 
-            string parentDir = System.Environment.GetEnvironmentVariable("TEMP");
-
-            TopLevelDir = System.IO.Path.Combine(parentDir, String.Format("Ionic.ZlibTest-{0}.tmp", System.DateTime.Now.ToString("yyyyMMMdd-HHmmss")));
-            System.IO.Directory.CreateDirectory(TopLevelDir);
-            System.IO.Directory.SetCurrentDirectory(TopLevelDir);
+            TopLevelDir = System.IO.Path.Combine( parentDir, String.Format( "Ionic.ZlibTest-{0}.tmp", System.DateTime.Now.ToString( "yyyyMMMdd-HHmmss" ) ) );
+            System.IO.Directory.CreateDirectory( TopLevelDir );
         }
 
 
         // Use TestCleanup to run code after each test has run
-        [TestCleanup()]
+        [TearDown]
         public void MyTestCleanup()
         {
-            System.IO.Directory.SetCurrentDirectory(System.Environment.GetEnvironmentVariable("TEMP"));
-            System.IO.Directory.Delete(TopLevelDir, true);
-            Assert.AreNotEqual<string>(System.IO.Path2.GetFileName(CurrentDir), "Temp", "at finish");
-            System.IO.Directory.SetCurrentDirectory(CurrentDir);
+            System.IO.Directory.Delete( TopLevelDir, true );
         }
-
-
-        #endregion
 
         #region Helpers
         /// <summary>
@@ -155,104 +100,24 @@ namespace Ionic.Zlib.Tests
             return location;
         }
 
-        private static string GetTestBinDir(string startingPoint)
+        private static string GetTestBinDir()
         {
-            return GetTestDependentDir(startingPoint, "Zlib Tests\\bin\\Debug");
+            var assemblyPath = new Uri(Assembly.GetExecutingAssembly().CodeBase).LocalPath;
+            return Path.GetDirectoryName(assemblyPath);
         }
 
         private string GetContentFile(string fileName)
         {
-            string testBin = GetTestBinDir(CurrentDir);
-            string path = Path.Combine(testBin, String.Format("Resources\\{0}", fileName));
+            string testBin = GetTestBinDir();
+            string path = Path.Combine(testBin, "Resources", fileName);
             Assert.IsTrue(File.Exists(path), "file ({0}) does not exist", path);
             return path;
-        }
-
-        internal string Exec(string program, string args)
-        {
-            return Exec(program, args, true);
-        }
-
-        internal string Exec(string program, string args, bool waitForExit)
-        {
-            return Exec(program, args, waitForExit, true);
-        }
-
-        internal string Exec(string program, string args, bool waitForExit, bool emitOutput)
-        {
-            if (program == null)
-                throw new ArgumentException("program");
-
-            if (args == null)
-                throw new ArgumentException("args");
-
-            // Microsoft.VisualStudio.TestTools.UnitTesting
-            this.TestContext.WriteLine("running command: {0} {1}", program, args);
-
-            string output;
-            int rc = Exec_NoContext(program, args, waitForExit, out output);
-
-            if (rc != 0)
-                throw new Exception(String.Format("Non-zero RC {0}: {1}", program, output));
-
-            if (emitOutput)
-                this.TestContext.WriteLine("output: {0}", output);
-            else
-                this.TestContext.WriteLine("A-OK. (output suppressed)");
-
-            return output;
-        }
-
-        internal static int Exec_NoContext(string program, string args, bool waitForExit, out string output)
-        {
-            System.Diagnostics.Process p = new System.Diagnostics.Process
-                {
-                    StartInfo =
-                    {
-                        FileName = program,
-                        CreateNoWindow = true,
-                        Arguments = args,
-                        WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden,
-                        UseShellExecute = false,
-                    }
-
-                };
-
-            if (waitForExit)
-            {
-                StringBuilder sb = new StringBuilder();
-                p.StartInfo.RedirectStandardOutput = true;
-                p.StartInfo.RedirectStandardError = true;
-                // must read at least one of the stderr or stdout asynchronously,
-                // to avoid deadlock
-                Action<Object, System.Diagnostics.DataReceivedEventArgs> stdErrorRead = (o, e) =>
-                {
-                    if (!String.IsNullOrEmpty(e.Data))
-                        sb.Append(e.Data);
-                };
-
-                p.ErrorDataReceived += new System.Diagnostics.DataReceivedEventHandler(stdErrorRead);
-                p.Start();
-                p.BeginErrorReadLine();
-                output = p.StandardOutput.ReadToEnd();
-                p.WaitForExit();
-                if (sb.Length > 0)
-                    output += sb.ToString();
-                //output = CleanWzzipOut(output); // just in case
-                return p.ExitCode;
-            }
-            else
-            {
-                p.Start();
-            }
-            output = "";
-            return 0;
         }
 
         #endregion
 
 
-        [TestMethod]
+        [Test]
         public void zlib_Compat_decompress_wi13446()
         {
             var zlibbedFile = GetContentFile("zlibbed.file");
@@ -284,7 +149,7 @@ namespace Ionic.Zlib.Tests
         }
 
 
-        [TestMethod]
+        [Test]
         public void Zlib_BasicDeflateAndInflate()
         {
             string TextToCompress = LoremIpsum;
@@ -297,7 +162,7 @@ namespace Ionic.Zlib.Tests
             ZlibCodec compressingStream = new ZlibCodec();
 
             rc = compressingStream.InitializeDeflate(CompressionLevel.Default);
-            Assert.AreEqual<int>(ZlibConstants.Z_OK, rc, String.Format("at InitializeDeflate() [{0}]", compressingStream.Message));
+            Assert.AreEqual(ZlibConstants.Z_OK, rc, String.Format("at InitializeDeflate() [{0}]", compressingStream.Message));
 
             compressingStream.InputBuffer = System.Text.ASCIIEncoding.ASCII.GetBytes(TextToCompress);
             compressingStream.NextIn = 0;
@@ -309,7 +174,7 @@ namespace Ionic.Zlib.Tests
             {
                 compressingStream.AvailableBytesIn = compressingStream.AvailableBytesOut = 1; // force small buffers
                 rc = compressingStream.Deflate(FlushType.None);
-                Assert.AreEqual<int>(ZlibConstants.Z_OK, rc, String.Format("at Deflate(1) [{0}]", compressingStream.Message));
+                Assert.AreEqual(ZlibConstants.Z_OK, rc, String.Format("at Deflate(1) [{0}]", compressingStream.Message));
             }
 
             while (true)
@@ -318,11 +183,11 @@ namespace Ionic.Zlib.Tests
                 rc = compressingStream.Deflate(FlushType.Finish);
                 if (rc == ZlibConstants.Z_STREAM_END)
                     break;
-                Assert.AreEqual<int>(ZlibConstants.Z_OK, rc, String.Format("at Deflate(2) [{0}]", compressingStream.Message));
+                Assert.AreEqual(ZlibConstants.Z_OK, rc, String.Format("at Deflate(2) [{0}]", compressingStream.Message));
             }
 
             rc = compressingStream.EndDeflate();
-            Assert.AreEqual<int>(ZlibConstants.Z_OK, rc, String.Format("at EndDeflate() [{0}]", compressingStream.Message));
+            Assert.AreEqual(ZlibConstants.Z_OK, rc, String.Format("at EndDeflate() [{0}]", compressingStream.Message));
 
             ZlibCodec decompressingStream = new ZlibCodec();
 
@@ -332,7 +197,7 @@ namespace Ionic.Zlib.Tests
             decompressingStream.NextOut = 0;
 
             rc = decompressingStream.InitializeInflate();
-            Assert.AreEqual<int>(ZlibConstants.Z_OK, rc, String.Format("at InitializeInflate() [{0}]", decompressingStream.Message));
+            Assert.AreEqual(ZlibConstants.Z_OK, rc, String.Format("at InitializeInflate() [{0}]", decompressingStream.Message));
             //CheckForError(decompressingStream, rc, "inflateInit");
 
             while (decompressingStream.TotalBytesOut < decompressedBytes.Length && decompressingStream.TotalBytesIn < bufferSize)
@@ -341,12 +206,12 @@ namespace Ionic.Zlib.Tests
                 rc = decompressingStream.Inflate(FlushType.None);
                 if (rc == ZlibConstants.Z_STREAM_END)
                     break;
-                Assert.AreEqual<int>(ZlibConstants.Z_OK, rc, String.Format("at Inflate() [{0}]", decompressingStream.Message));
+                Assert.AreEqual(ZlibConstants.Z_OK, rc, String.Format("at Inflate() [{0}]", decompressingStream.Message));
                 //CheckForError(decompressingStream, rc, "inflate");
             }
 
             rc = decompressingStream.EndInflate();
-            Assert.AreEqual<int>(ZlibConstants.Z_OK, rc, String.Format("at EndInflate() [{0}]", decompressingStream.Message));
+            Assert.AreEqual(ZlibConstants.Z_OK, rc, String.Format("at EndInflate() [{0}]", decompressingStream.Message));
             //CheckForError(decompressingStream, rc, "inflateEnd");
 
             int j = 0;
@@ -354,85 +219,27 @@ namespace Ionic.Zlib.Tests
                 if (decompressedBytes[j] == 0)
                     break;
 
-            Assert.AreEqual<int>(TextToCompress.Length, j, String.Format("Unequal lengths"));
+            Assert.AreEqual(TextToCompress.Length, j, String.Format("Unequal lengths"));
 
             int i = 0;
             for (i = 0; i < j; i++)
                 if (TextToCompress[i] != decompressedBytes[i])
                     break;
 
-            Assert.AreEqual<int>(j, i, String.Format("Non-identical content"));
+            Assert.AreEqual(j, i, String.Format("Non-identical content"));
 
             var result = System.Text.ASCIIEncoding.ASCII.GetString(decompressedBytes, 0, j);
 
-            TestContext.WriteLine("orig length: {0}", TextToCompress.Length);
-            TestContext.WriteLine("compressed length: {0}", compressingStream.TotalBytesOut);
-            TestContext.WriteLine("decompressed length: {0}", decompressingStream.TotalBytesOut);
-            TestContext.WriteLine("result length: {0}", result.Length);
-            TestContext.WriteLine("result of inflate:\n{0}", result);
+            Console.WriteLine("orig length: {0}", TextToCompress.Length);
+            Console.WriteLine("compressed length: {0}", compressingStream.TotalBytesOut);
+            Console.WriteLine("decompressed length: {0}", decompressingStream.TotalBytesOut);
+            Console.WriteLine("result length: {0}", result.Length);
+            Console.WriteLine("result of inflate:\n{0}", result);
             return;
         }
 
 
-        [TestMethod]
-        public void GZ_Utility()
-        {
-            var gzbin = GetTestDependentDir(CurrentDir, "Tools\\GZip\\bin\\Debug");
-            var dnzGzipexe = Path.Combine(gzbin, "gzip.exe");
-            Assert.IsTrue(File.Exists(dnzGzipexe), "Gzip.exe is missing {0}",
-                          dnzGzipexe);
-            var unxGzipexe = "\\bin\\gzip.exe";
-            Assert.IsTrue(File.Exists(unxGzipexe), "Gzip.exe is missing {0}",
-                          unxGzipexe);
-
-            foreach (var key in TestStrings.Keys)
-            {
-                int count = this.rnd.Next(81) + 40;
-                TestContext.WriteLine("Doing string {0}", key);
-                var s =  TestStrings[key];
-                var fname = String.Format("Pippo-{0}.txt", key);
-                using (var sw = new StreamWriter(File.Create(fname)))
-                {
-                    for (int k=0; k < count; k++)
-                    {
-                        sw.WriteLine(s);
-                    }
-                }
-
-                int crcOriginal = DoCrc(fname);
-
-                string args = fname + " -keep -v";
-                TestContext.WriteLine("Exec: gzip {0}", args);
-                string gzout = this.Exec(dnzGzipexe, args);
-
-                var gzfile = fname + ".gz";
-                Assert.IsTrue(File.Exists(gzfile), "File is missing. {0}",
-                              gzfile);
-
-                File.Delete(fname);
-                Assert.IsTrue(!File.Exists(fname), "The delete failed. {0}",
-                              fname);
-
-                System.Threading.Thread.Sleep(1200);
-
-                args = "-dfv "+ gzfile;
-                TestContext.WriteLine("Exec: gzip {0}", args);
-                gzout = this.Exec(unxGzipexe, args);
-                Assert.IsTrue(File.Exists(fname), "File is missing. {0}",
-                              fname);
-
-                int crcDecompressed = DoCrc(fname);
-                Assert.AreEqual<int>(crcOriginal, crcDecompressed,
-                                     "CRC mismatch {0:X8}!={1:X8}",
-                                     crcOriginal, crcDecompressed);
-            }
-        }
-
-
-
-
-
-        [TestMethod]
+        [Test]
         public void Zlib_BasicDictionaryDeflateInflate()
         {
             int rc;
@@ -444,7 +251,7 @@ namespace Ionic.Zlib.Tests
 
             ZlibCodec compressor = new ZlibCodec();
             rc = compressor.InitializeDeflate(CompressionLevel.BestCompression);
-            Assert.AreEqual<int>(ZlibConstants.Z_OK, rc, String.Format("at InitializeDeflate() [{0}]", compressor.Message));
+            Assert.AreEqual(ZlibConstants.Z_OK, rc, String.Format("at InitializeDeflate() [{0}]", compressor.Message));
 
             string dictionaryWord = "hello ";
             byte[] dictionary = System.Text.ASCIIEncoding.ASCII.GetBytes(dictionaryWord);
@@ -452,7 +259,7 @@ namespace Ionic.Zlib.Tests
             byte[] BytesToCompress = System.Text.ASCIIEncoding.ASCII.GetBytes(TextToCompress);
 
             rc = compressor.SetDictionary(dictionary);
-            Assert.AreEqual<int>(ZlibConstants.Z_OK, rc, String.Format("at SetDeflateDictionary() [{0}]", compressor.Message));
+            Assert.AreEqual(ZlibConstants.Z_OK, rc, String.Format("at SetDeflateDictionary() [{0}]", compressor.Message));
 
             int dictId = compressor.Adler32;
 
@@ -465,10 +272,10 @@ namespace Ionic.Zlib.Tests
             compressor.AvailableBytesIn = BytesToCompress.Length;
 
             rc = compressor.Deflate(FlushType.Finish);
-            Assert.AreEqual<int>(ZlibConstants.Z_STREAM_END, rc, String.Format("at Deflate() [{0}]", compressor.Message));
+            Assert.AreEqual(ZlibConstants.Z_STREAM_END, rc, String.Format("at Deflate() [{0}]", compressor.Message));
 
             rc = compressor.EndDeflate();
-            Assert.AreEqual<int>(ZlibConstants.Z_OK, rc, String.Format("at EndDeflate() [{0}]", compressor.Message));
+            Assert.AreEqual(ZlibConstants.Z_OK, rc, String.Format("at EndDeflate() [{0}]", compressor.Message));
 
 
             ZlibCodec decompressor = new ZlibCodec();
@@ -478,7 +285,7 @@ namespace Ionic.Zlib.Tests
             decompressor.AvailableBytesIn = comprLen;
 
             rc = decompressor.InitializeInflate();
-            Assert.AreEqual<int>(ZlibConstants.Z_OK, rc, String.Format("at InitializeInflate() [{0}]", decompressor.Message));
+            Assert.AreEqual(ZlibConstants.Z_OK, rc, String.Format("at InitializeInflate() [{0}]", decompressor.Message));
 
             decompressor.OutputBuffer = uncompr;
             decompressor.NextOut = 0;
@@ -493,39 +300,39 @@ namespace Ionic.Zlib.Tests
                 }
                 if (rc == ZlibConstants.Z_NEED_DICT)
                 {
-                    Assert.AreEqual<long>(dictId, decompressor.Adler32, "Unexpected Dictionary");
+                    Assert.AreEqual(dictId, decompressor.Adler32, "Unexpected Dictionary");
                     rc = decompressor.SetDictionary(dictionary);
                 }
-                Assert.AreEqual<int>(ZlibConstants.Z_OK, rc, String.Format("at Inflate/SetInflateDictionary() [{0}]", decompressor.Message));
+                Assert.AreEqual(ZlibConstants.Z_OK, rc, String.Format("at Inflate/SetInflateDictionary() [{0}]", decompressor.Message));
             }
 
             rc = decompressor.EndInflate();
-            Assert.AreEqual<int>(ZlibConstants.Z_OK, rc, String.Format("at EndInflate() [{0}]", decompressor.Message));
+            Assert.AreEqual(ZlibConstants.Z_OK, rc, String.Format("at EndInflate() [{0}]", decompressor.Message));
 
             int j = 0;
             for (; j < uncompr.Length; j++)
                 if (uncompr[j] == 0)
                     break;
 
-            Assert.AreEqual<int>(TextToCompress.Length, j, String.Format("Unequal lengths"));
+            Assert.AreEqual(TextToCompress.Length, j, String.Format("Unequal lengths"));
 
             int i = 0;
             for (i = 0; i < j; i++)
                 if (TextToCompress[i] != uncompr[i])
                     break;
 
-            Assert.AreEqual<int>(j, i, String.Format("Non-identical content"));
+            Assert.AreEqual(j, i, String.Format("Non-identical content"));
 
             var result = System.Text.ASCIIEncoding.ASCII.GetString(uncompr, 0, j);
 
-            TestContext.WriteLine("orig length: {0}", TextToCompress.Length);
-            TestContext.WriteLine("compressed length: {0}", compressor.TotalBytesOut);
-            TestContext.WriteLine("uncompressed length: {0}", decompressor.TotalBytesOut);
-            TestContext.WriteLine("result length: {0}", result.Length);
-            TestContext.WriteLine("result of inflate:\n{0}", result);
+            Console.WriteLine("orig length: {0}", TextToCompress.Length);
+            Console.WriteLine("compressed length: {0}", compressor.TotalBytesOut);
+            Console.WriteLine("uncompressed length: {0}", decompressor.TotalBytesOut);
+            Console.WriteLine("result length: {0}", result.Length);
+            Console.WriteLine("result of inflate:\n{0}", result);
         }
 
-        [TestMethod]
+        [Test]
         public void Zlib_TestFlushSync()
         {
             int rc;
@@ -551,7 +358,7 @@ namespace Ionic.Zlib.Tests
             compressor.AvailableBytesIn = TextToCompress.Length - 3;
 
             rc = compressor.Deflate(FlushType.Finish);
-            Assert.AreEqual<int>(ZlibConstants.Z_STREAM_END, rc, String.Format("at Deflate() [{0}]", compressor.Message));
+            Assert.AreEqual(ZlibConstants.Z_STREAM_END, rc, String.Format("at Deflate() [{0}]", compressor.Message));
 
             rc = compressor.EndDeflate();
             bufferSize = (int)(compressor.TotalBytesOut);
@@ -578,14 +385,14 @@ namespace Ionic.Zlib.Tests
             }
             catch (ZlibException ex1)
             {
-                TestContext.WriteLine("Got Expected Exception: " + ex1);
+                Console.WriteLine("Got Expected Exception: " + ex1);
                 gotException = true;
             }
 
             Assert.IsTrue(gotException, "inflate should report DATA_ERROR");
 
             rc = decompressor.EndInflate();
-            Assert.AreEqual<int>(ZlibConstants.Z_OK, rc, String.Format("at EndInflate() [{0}]", decompressor.Message));
+            Assert.AreEqual(ZlibConstants.Z_OK, rc, String.Format("at EndInflate() [{0}]", decompressor.Message));
 
             int j = 0;
             for (; j < DecompressedBytes.Length; j++)
@@ -594,7 +401,7 @@ namespace Ionic.Zlib.Tests
 
             var result = System.Text.ASCIIEncoding.ASCII.GetString(DecompressedBytes, 0, j);
 
-            Assert.AreEqual<int>(TextToCompress.Length, result.Length + 3, "Strings are unequal lengths");
+            Assert.AreEqual(TextToCompress.Length, result.Length + 3, "Strings are unequal lengths");
 
             Console.WriteLine("orig length: {0}", TextToCompress.Length);
             Console.WriteLine("compressed length: {0}", compressor.TotalBytesOut);
@@ -603,7 +410,7 @@ namespace Ionic.Zlib.Tests
             Console.WriteLine("result of inflate:\n(Thi){0}", result);
         }
 
-        [TestMethod]
+        [Test]
         public void Zlib_Codec_TestLargeDeflateInflate()
         {
             int rc;
@@ -615,7 +422,7 @@ namespace Ionic.Zlib.Tests
             ZlibCodec compressingStream = new ZlibCodec();
 
             rc = compressingStream.InitializeDeflate(CompressionLevel.Level1);
-            Assert.AreEqual<int>(ZlibConstants.Z_OK, rc, String.Format("at InitializeDeflate() [{0}]", compressingStream.Message));
+            Assert.AreEqual(ZlibConstants.Z_OK, rc, String.Format("at InitializeDeflate() [{0}]", compressingStream.Message));
 
             compressingStream.OutputBuffer = compressedBytes;
             compressingStream.AvailableBytesOut = compressedBytes.Length;
@@ -659,22 +466,22 @@ namespace Ionic.Zlib.Tests
                 compressingStream.NextIn = 0;
                 compressingStream.AvailableBytesIn = workBuffer.Length;
                 rc = compressingStream.Deflate(FlushType.None);
-                Assert.AreEqual<int>(ZlibConstants.Z_OK, rc, String.Format("at Deflate({0}) [{1}]", k, compressingStream.Message));
+                Assert.AreEqual(ZlibConstants.Z_OK, rc, String.Format("at Deflate({0}) [{1}]", k, compressingStream.Message));
 
                 if (k == 0)
-                    Assert.AreEqual<int>(0, compressingStream.AvailableBytesIn, "Deflate should be greedy.");
+                    Assert.AreEqual(0, compressingStream.AvailableBytesIn, "Deflate should be greedy.");
 
-                TestContext.WriteLine("Stage {0}: uncompressed/compresssed bytes so far:  ({1,6}/{2,6})",
+                Console.WriteLine("Stage {0}: uncompressed/compresssed bytes so far:  ({1,6}/{2,6})",
                       k, compressingStream.TotalBytesIn, compressingStream.TotalBytesOut);
             }
 
             rc = compressingStream.Deflate(FlushType.Finish);
-            Assert.AreEqual<int>(ZlibConstants.Z_STREAM_END, rc, String.Format("at Deflate() [{0}]", compressingStream.Message));
+            Assert.AreEqual(ZlibConstants.Z_STREAM_END, rc, String.Format("at Deflate() [{0}]", compressingStream.Message));
 
             rc = compressingStream.EndDeflate();
-            Assert.AreEqual<int>(ZlibConstants.Z_OK, rc, String.Format("at EndDeflate() [{0}]", compressingStream.Message));
+            Assert.AreEqual(ZlibConstants.Z_OK, rc, String.Format("at EndDeflate() [{0}]", compressingStream.Message));
 
-            TestContext.WriteLine("Final: uncompressed/compressed bytes: ({0,6},{1,6})",
+            Console.WriteLine("Final: uncompressed/compressed bytes: ({0,6},{1,6})",
                   compressingStream.TotalBytesIn, compressingStream.TotalBytesOut);
 
             ZlibCodec decompressingStream = new ZlibCodec(CompressionMode.Decompress);
@@ -697,62 +504,62 @@ namespace Ionic.Zlib.Tests
                 if (rc == ZlibConstants.Z_STREAM_END)
                     break;
 
-                Assert.AreEqual<int>(ZlibConstants.Z_OK, rc, String.Format("at Inflate() [{0}] TotalBytesOut={1}",
+                Assert.AreEqual(ZlibConstants.Z_OK, rc, String.Format("at Inflate() [{0}] TotalBytesOut={1}",
                                        decompressingStream.Message, decompressingStream.TotalBytesOut));
             }
 
             rc = decompressingStream.EndInflate();
-            Assert.AreEqual<int>(ZlibConstants.Z_OK, rc, String.Format("at EndInflate() [{0}]", decompressingStream.Message));
+            Assert.AreEqual(ZlibConstants.Z_OK, rc, String.Format("at EndInflate() [{0}]", decompressingStream.Message));
 
-            Assert.AreEqual<int>(4 * workBuffer.Length, (int)decompressingStream.TotalBytesOut);
+            Assert.AreEqual(4 * workBuffer.Length, (int)decompressingStream.TotalBytesOut);
 
-            TestContext.WriteLine("compressed length: {0}", compressingStream.TotalBytesOut);
-            TestContext.WriteLine("decompressed length (expected): {0}", 4 * workBuffer.Length);
-            TestContext.WriteLine("decompressed length (actual)  : {0}", decompressingStream.TotalBytesOut);
-            TestContext.WriteLine("decompression cycles: {0}", nCycles);
+            Console.WriteLine("compressed length: {0}", compressingStream.TotalBytesOut);
+            Console.WriteLine("decompressed length (expected): {0}", 4 * workBuffer.Length);
+            Console.WriteLine("decompressed length (actual)  : {0}", decompressingStream.TotalBytesOut);
+            Console.WriteLine("decompression cycles: {0}", nCycles);
         }
 
 
 
-        [TestMethod]
+        [Test]
         public void Zlib_CompressString()
         {
-            TestContext.WriteLine("Original.Length: {0}", GoPlacidly.Length);
+            Console.WriteLine("Original.Length: {0}", GoPlacidly.Length);
             byte[] compressed = ZlibStream.CompressString(GoPlacidly);
-            TestContext.WriteLine("compressed.Length: {0}", compressed.Length);
+            Console.WriteLine("compressed.Length: {0}", compressed.Length);
             Assert.IsTrue(compressed.Length < GoPlacidly.Length);
 
             string uncompressed = ZlibStream.UncompressString(compressed);
-            Assert.AreEqual<Int32>(GoPlacidly.Length, uncompressed.Length);
+            Assert.AreEqual(GoPlacidly.Length, uncompressed.Length);
         }
 
-        [TestMethod]
+        [Test]
         public void GZip_CompressString()
         {
-            TestContext.WriteLine("Original.Length: {0}", GoPlacidly.Length);
+            Console.WriteLine("Original.Length: {0}", GoPlacidly.Length);
             byte[] compressed = GZipStream.CompressString(GoPlacidly);
-            TestContext.WriteLine("compressed.Length: {0}", compressed.Length);
+            Console.WriteLine("compressed.Length: {0}", compressed.Length);
             Assert.IsTrue(compressed.Length < GoPlacidly.Length);
 
             string uncompressed = GZipStream.UncompressString(compressed);
-            Assert.AreEqual<Int32>(GoPlacidly.Length, uncompressed.Length);
+            Assert.AreEqual(GoPlacidly.Length, uncompressed.Length);
         }
 
-        [TestMethod]
+        [Test]
         public void Deflate_CompressString()
         {
-            TestContext.WriteLine("Original.Length: {0}", GoPlacidly.Length);
+            Console.WriteLine("Original.Length: {0}", GoPlacidly.Length);
             byte[] compressed = DeflateStream.CompressString(GoPlacidly);
-            TestContext.WriteLine("compressed.Length: {0}", compressed.Length);
+            Console.WriteLine("compressed.Length: {0}", compressed.Length);
             Assert.IsTrue(compressed.Length < GoPlacidly.Length);
 
             string uncompressed = DeflateStream.UncompressString(compressed);
-            Assert.AreEqual<Int32>(GoPlacidly.Length, uncompressed.Length);
+            Assert.AreEqual(GoPlacidly.Length, uncompressed.Length);
         }
 
 
 
-        [TestMethod]
+        [Test]
         public void Zlib_ZlibStream_CompressWhileWriting()
         {
             System.IO.MemoryStream msSinkCompressed;
@@ -774,13 +581,13 @@ namespace Ionic.Zlib.Tests
             CopyStream(msSinkCompressed, zOut);
 
             string result = MemoryStreamToString(msSinkDecompressed);
-            TestContext.WriteLine("decompressed: {0}", result);
-            Assert.AreEqual<String>(IhaveaDream, result);
+            Console.WriteLine("decompressed: {0}", result);
+            Assert.AreEqual(IhaveaDream, result);
         }
 
 
 
-        [TestMethod]
+        [Test]
         public void Zlib_ZlibStream_CompressWhileReading_wi8557()
         {
             // workitem 8557
@@ -803,13 +610,13 @@ namespace Ionic.Zlib.Tests
             CopyStream(msSinkCompressed, zOut);
 
             string result = MemoryStreamToString(msSinkDecompressed);
-            TestContext.WriteLine("decompressed: {0}", result);
-            Assert.AreEqual<String>(WhatWouldThingsHaveBeenLike, result);
+            Console.WriteLine("decompressed: {0}", result);
+            Assert.AreEqual(WhatWouldThingsHaveBeenLike, result);
         }
 
 
 
-        [TestMethod]
+        [Test]
         public void Zlib_CodecTest()
         {
             int sz = this.rnd.Next(50000) + 50000;
@@ -820,8 +627,8 @@ namespace Ionic.Zlib.Tests
 
             foreach (Ionic.Zlib.CompressionLevel level in Enum.GetValues(typeof(Ionic.Zlib.CompressionLevel)))
             {
-                TestContext.WriteLine("\n\n+++++++++++++++++++++++++++++++++++++++++++++++++++++++");
-                TestContext.WriteLine("trying compression level '{0}'", level.ToString());
+                Console.WriteLine("\n\n+++++++++++++++++++++++++++++++++++++++++++++++++++++++");
+                Console.WriteLine("trying compression level '{0}'", level.ToString());
                 byte[] CompressedBytes = DeflateBuffer(UncompressedBytes, level);
                 byte[] DecompressedBytes = InflateBuffer(CompressedBytes, UncompressedBytes.Length);
                 CompareBuffers(UncompressedBytes, DecompressedBytes);
@@ -852,8 +659,8 @@ namespace Ionic.Zlib.Tests
             byte[] buffer = new byte[bufferSize];
             ZlibCodec decompressor = new ZlibCodec();
             byte[] DecompressedBytes = new byte[length];
-            TestContext.WriteLine("\n============================================");
-            TestContext.WriteLine("Size of Buffer to Inflate: {0} bytes.", b.Length);
+            Console.WriteLine("\n============================================");
+            Console.WriteLine("Size of Buffer to Inflate: {0} bytes.", b.Length);
             MemoryStream ms = new MemoryStream(DecompressedBytes);
 
             int rc = decompressor.InitializeInflate();
@@ -885,7 +692,7 @@ namespace Ionic.Zlib.Tests
             }
 
             decompressor.EndInflate();
-            TestContext.WriteLine("TBO({0}).", decompressor.TotalBytesOut);
+            Console.WriteLine("TBO({0}).", decompressor.TotalBytesOut);
             return DecompressedBytes;
         }
 
@@ -894,8 +701,8 @@ namespace Ionic.Zlib.Tests
 
         private void CompareBuffers(byte[] a, byte[] b)
         {
-            TestContext.WriteLine("\n============================================");
-            TestContext.WriteLine("Comparing...");
+            Console.WriteLine("\n============================================");
+            Console.WriteLine("Comparing...");
 
             if (a.Length != b.Length)
                 throw new Exception(String.Format("not equal size ({0}!={1})", a.Length, b.Length));
@@ -915,8 +722,8 @@ namespace Ionic.Zlib.Tests
             byte[] buffer = new byte[bufferSize];
             ZlibCodec compressor = new ZlibCodec();
 
-            TestContext.WriteLine("\n============================================");
-            TestContext.WriteLine("Size of Buffer to Deflate: {0} bytes.", b.Length);
+            Console.WriteLine("\n============================================");
+            Console.WriteLine("Size of Buffer to Deflate: {0} bytes.", b.Length);
             MemoryStream ms = new MemoryStream();
 
             int rc = compressor.InitializeDeflate(level);
@@ -957,7 +764,7 @@ namespace Ionic.Zlib.Tests
         }
 
 
-        [TestMethod]
+        [Test]
         public void Zlib_GZipStream_FileName_And_Comments()
         {
             // select the name of the zip file
@@ -967,7 +774,7 @@ namespace Ionic.Zlib.Tests
             int n = -1;
 
             int sz = this.rnd.Next(21000) + 15000;
-            TestContext.WriteLine("  Creating file: {0} sz({1})", FileToCompress, sz);
+            Console.WriteLine("  Creating file: {0} sz({1})", FileToCompress, sz);
             CreateAndFillFileText(FileToCompress, sz);
 
             System.IO.FileInfo fi1 = new System.IO.FileInfo(FileToCompress);
@@ -1034,7 +841,7 @@ namespace Ionic.Zlib.Tests
                             string DecompressedFile =
                                                         String.Format("{0}.{1}.decompressed", CompressedFile, (j == 0) ? "Ionic" : "BCL");
 
-                            TestContext.WriteLine("........{0} ...", System.IO.Path2.GetFileName(DecompressedFile));
+                            Console.WriteLine("........{0} ...", System.IO.Path2.GetFileName(DecompressedFile));
 
                             using (var s2 = System.IO.File.Create(DecompressedFile))
                             {
@@ -1048,7 +855,7 @@ namespace Ionic.Zlib.Tests
                             }
 
                             int crc2 = DoCrc(DecompressedFile);
-                            Assert.AreEqual<Int32>(crc1, crc2);
+                            Assert.AreEqual(crc1, crc2);
 
                         }
                         finally
@@ -1062,7 +869,7 @@ namespace Ionic.Zlib.Tests
         }
 
 
-        [TestMethod]
+        [Test]
         public void Zlib_GZipStream_ByteByByte_CheckCrc()
         {
             // select the name of the zip file
@@ -1072,7 +879,7 @@ namespace Ionic.Zlib.Tests
             int n = -1;
 
             int sz = this.rnd.Next(21000) + 15000;
-            TestContext.WriteLine("  Creating file: {0} sz({1})", FileToCompress, sz);
+            Console.WriteLine("  Creating file: {0} sz({1})", FileToCompress, sz);
             CreateAndFillFileText(FileToCompress, sz);
 
             System.IO.FileInfo fi1 = new System.IO.FileInfo(FileToCompress);
@@ -1142,7 +949,7 @@ namespace Ionic.Zlib.Tests
                             string DecompressedFile =
                                 String.Format("{0}.{1}.decompressed", CompressedFile, (j == 0) ? "Ionic" : "BCL");
 
-                            TestContext.WriteLine("........{0} ...", System.IO.Path2.GetFileName(DecompressedFile));
+                            Console.WriteLine("........{0} ...", System.IO.Path2.GetFileName(DecompressedFile));
 
                             using (var s2 = System.IO.File.Create(DecompressedFile))
                             {
@@ -1156,7 +963,7 @@ namespace Ionic.Zlib.Tests
                             }
 
                             int crc2 = DoCrc(DecompressedFile);
-                            Assert.AreEqual<Int32>(crc1, crc2);
+                            Assert.AreEqual(crc1, crc2);
 
                         }
                         finally
@@ -1165,7 +972,7 @@ namespace Ionic.Zlib.Tests
                             {
                                 var gz = (Ionic.Zlib.GZipStream) decompressor;
                                 gz.Close(); // sets the final CRC
-                                Assert.AreEqual<Int32>(gz.Crc32, crc1);
+                                Assert.AreEqual(gz.Crc32, crc1);
                             }
 
                             if (decompressor != null)
@@ -1177,14 +984,14 @@ namespace Ionic.Zlib.Tests
         }
 
 
-        [TestMethod]
+        [Test]
         public void Zlib_GZipStream_DecompressEmptyStream()
         {
             _DecompressEmptyStream(typeof(GZipStream));
         }
 
 
-        [TestMethod]
+        [Test]
         public void Zlib_ZlibStream_DecompressEmptyStream()
         {
             _DecompressEmptyStream(typeof(ZlibStream));
@@ -1218,7 +1025,7 @@ namespace Ionic.Zlib.Tests
                                 n = decompressor.Read(working, 0, working.Length);
 
 
-                            Assert.AreEqual<Int64>(ms2.Length, 0L);
+                            Assert.AreEqual(ms2.Length, 0L);
                         }
                     }
                 }
@@ -1226,7 +1033,7 @@ namespace Ionic.Zlib.Tests
         }
 
 
-        [TestMethod]
+        [Test]
         public void Zlib_DeflateStream_InMemory()
         {
             String TextToCompress = UntilHeExtends;
@@ -1249,19 +1056,19 @@ namespace Ionic.Zlib.Tests
                 else
                 {
                     compressor = new Ionic.Zlib.DeflateStream(ms, CompressionMode.Compress, levels[k], false);
-                    TestContext.WriteLine("using level: {0}", levels[k].ToString());
+                    Console.WriteLine("using level: {0}", levels[k].ToString());
                 }
 
-                TestContext.WriteLine("Text to compress is {0} bytes: '{1}'",
+                Console.WriteLine("Text to compress is {0} bytes: '{1}'",
                                       TextToCompress.Length, TextToCompress);
-                TestContext.WriteLine("using compressor: {0}", compressor.GetType().FullName);
+                Console.WriteLine("using compressor: {0}", compressor.GetType().FullName);
 
                 StreamWriter sw = new StreamWriter(compressor, System.Text.Encoding.ASCII);
                 sw.Write(TextToCompress);
                 sw.Close();
 
                 var a = ms.ToArray();
-                TestContext.WriteLine("Compressed stream is {0} bytes long", a.Length);
+                Console.WriteLine("Compressed stream is {0} bytes long", a.Length);
 
                 // de-compress with both Ionic and System.IO.Compression
                 for (int j = 0; j < 2; j++)
@@ -1279,21 +1086,21 @@ namespace Ionic.Zlib.Tests
                         break;
                     }
 
-                    TestContext.WriteLine("using decompressor: {0}", decompressor.GetType().FullName);
+                    Console.WriteLine("using decompressor: {0}", decompressor.GetType().FullName);
 
                     var sr = new StreamReader(decompressor, System.Text.Encoding.ASCII);
                     string DecompressedText = sr.ReadToEnd();
 
-                    TestContext.WriteLine("Read {0} characters: '{1}'", DecompressedText.Length, DecompressedText);
-                    TestContext.WriteLine("\n");
-                    Assert.AreEqual<String>(TextToCompress, DecompressedText);
+                    Console.WriteLine("Read {0} characters: '{1}'", DecompressedText.Length, DecompressedText);
+                    Console.WriteLine("\n");
+                    Assert.AreEqual(TextToCompress, DecompressedText);
                 }
             }
         }
 
 
 
-        [TestMethod]
+        [Test]
         public void Zlib_CloseTwice()
         {
             string TextToCompress = LetMeDoItNow;
@@ -1316,9 +1123,9 @@ namespace Ionic.Zlib.Tests
                     break;
                 }
 
-                TestContext.WriteLine("Text to compress is {0} bytes: '{1}'",
+                Console.WriteLine("Text to compress is {0} bytes: '{1}'",
                                       TextToCompress.Length, TextToCompress);
-                TestContext.WriteLine("using compressor: {0}", compressor.GetType().FullName);
+                Console.WriteLine("using compressor: {0}", compressor.GetType().FullName);
 
                 StreamWriter sw = new StreamWriter(compressor, System.Text.Encoding.ASCII);
                 sw.Write(TextToCompress);
@@ -1327,7 +1134,7 @@ namespace Ionic.Zlib.Tests
 
                 compressor.Close(); // explicitly closes compressor
                 var a = ms1.ToArray();
-                TestContext.WriteLine("Compressed stream is {0} bytes long", a.Length);
+                Console.WriteLine("Compressed stream is {0} bytes long", a.Length);
 
                 var ms2 = new MemoryStream(a);
                 Stream decompressor = null;
@@ -1345,7 +1152,7 @@ namespace Ionic.Zlib.Tests
                     break;
                 }
 
-                TestContext.WriteLine("using decompressor: {0}", decompressor.GetType().FullName);
+                Console.WriteLine("using decompressor: {0}", decompressor.GetType().FullName);
 
                 var sr = new StreamReader(decompressor, System.Text.Encoding.ASCII);
                 string DecompressedText = sr.ReadToEnd();
@@ -1355,14 +1162,14 @@ namespace Ionic.Zlib.Tests
                 sr.Close();
                 decompressor.Close();
 
-                TestContext.WriteLine("Read {0} characters: '{1}'", DecompressedText.Length, DecompressedText);
-                TestContext.WriteLine("\n");
-                Assert.AreEqual<String>(TextToCompress, DecompressedText);
+                Console.WriteLine("Read {0} characters: '{1}'", DecompressedText.Length, DecompressedText);
+                Console.WriteLine("\n");
+                Assert.AreEqual(TextToCompress, DecompressedText);
             }
         }
 
 
-        [TestMethod]
+        [Test]
         [ExpectedException(typeof(System.ObjectDisposedException))]
         public void Zlib_DisposedException_DeflateStream()
         {
@@ -1372,9 +1179,9 @@ namespace Ionic.Zlib.Tests
 
                 Stream compressor= new DeflateStream(ms1, CompressionMode.Compress, false);
 
-                TestContext.WriteLine("Text to compress is {0} bytes: '{1}'",
+                Console.WriteLine("Text to compress is {0} bytes: '{1}'",
                                       TextToCompress.Length, TextToCompress);
-                TestContext.WriteLine("using compressor: {0}", compressor.GetType().FullName);
+                Console.WriteLine("using compressor: {0}", compressor.GetType().FullName);
 
                 StreamWriter sw = new StreamWriter(compressor, System.Text.Encoding.ASCII);
                 sw.Write(TextToCompress);
@@ -1383,27 +1190,27 @@ namespace Ionic.Zlib.Tests
 
                 compressor.Close(); // explicitly closes compressor
                 var a = ms1.ToArray();
-                TestContext.WriteLine("Compressed stream is {0} bytes long", a.Length);
+                Console.WriteLine("Compressed stream is {0} bytes long", a.Length);
 
                 var ms2 = new MemoryStream(a);
                 Stream decompressor  = new DeflateStream(ms2, CompressionMode.Decompress, false);
 
-                TestContext.WriteLine("using decompressor: {0}", decompressor.GetType().FullName);
+                Console.WriteLine("using decompressor: {0}", decompressor.GetType().FullName);
 
                 var sr = new StreamReader(decompressor, System.Text.Encoding.ASCII);
                 string DecompressedText = sr.ReadToEnd();
                 sr.Close();
 
-                TestContext.WriteLine("decompressor.CanRead = {0}",decompressor.CanRead);
+                Console.WriteLine("decompressor.CanRead = {0}",decompressor.CanRead);
 
-                TestContext.WriteLine("Read {0} characters: '{1}'", DecompressedText.Length, DecompressedText);
-                TestContext.WriteLine("\n");
-                Assert.AreEqual<String>(TextToCompress, DecompressedText);
+                Console.WriteLine("Read {0} characters: '{1}'", DecompressedText.Length, DecompressedText);
+                Console.WriteLine("\n");
+                Assert.AreEqual(TextToCompress, DecompressedText);
 
         }
 
 
-        [TestMethod]
+        [Test]
         [ExpectedException(typeof(System.ObjectDisposedException))]
         public void Zlib_DisposedException_GZipStream()
         {
@@ -1413,9 +1220,9 @@ namespace Ionic.Zlib.Tests
 
             Stream compressor= new GZipStream(ms1, CompressionMode.Compress, false);
 
-            TestContext.WriteLine("Text to compress is {0} bytes: '{1}'",
+            Console.WriteLine("Text to compress is {0} bytes: '{1}'",
                                   TextToCompress.Length, TextToCompress);
-            TestContext.WriteLine("using compressor: {0}", compressor.GetType().FullName);
+            Console.WriteLine("using compressor: {0}", compressor.GetType().FullName);
 
             StreamWriter sw = new StreamWriter(compressor, System.Text.Encoding.ASCII);
             sw.Write(TextToCompress);
@@ -1424,26 +1231,26 @@ namespace Ionic.Zlib.Tests
 
             compressor.Close(); // explicitly closes compressor
             var a = ms1.ToArray();
-            TestContext.WriteLine("Compressed stream is {0} bytes long", a.Length);
+            Console.WriteLine("Compressed stream is {0} bytes long", a.Length);
 
             var ms2 = new MemoryStream(a);
             Stream decompressor  = new GZipStream(ms2, CompressionMode.Decompress, false);
 
-            TestContext.WriteLine("using decompressor: {0}", decompressor.GetType().FullName);
+            Console.WriteLine("using decompressor: {0}", decompressor.GetType().FullName);
 
             var sr = new StreamReader(decompressor, System.Text.Encoding.ASCII);
             string DecompressedText = sr.ReadToEnd();
             sr.Close();
 
-            TestContext.WriteLine("decompressor.CanRead = {0}",decompressor.CanRead);
+            Console.WriteLine("decompressor.CanRead = {0}",decompressor.CanRead);
 
-            TestContext.WriteLine("Read {0} characters: '{1}'", DecompressedText.Length, DecompressedText);
-            TestContext.WriteLine("\n");
-            Assert.AreEqual<String>(TextToCompress, DecompressedText);
+            Console.WriteLine("Read {0} characters: '{1}'", DecompressedText.Length, DecompressedText);
+            Console.WriteLine("\n");
+            Assert.AreEqual(TextToCompress, DecompressedText);
         }
 
 
-        [TestMethod]
+        [Test]
         [ExpectedException(typeof(System.ObjectDisposedException))]
         public void Zlib_DisposedException_ZlibStream()
         {
@@ -1453,9 +1260,9 @@ namespace Ionic.Zlib.Tests
 
             Stream compressor= new ZlibStream(ms1, CompressionMode.Compress, false);
 
-            TestContext.WriteLine("Text to compress is {0} bytes: '{1}'",
+            Console.WriteLine("Text to compress is {0} bytes: '{1}'",
                                   TextToCompress.Length, TextToCompress);
-            TestContext.WriteLine("using compressor: {0}", compressor.GetType().FullName);
+            Console.WriteLine("using compressor: {0}", compressor.GetType().FullName);
 
             StreamWriter sw = new StreamWriter(compressor, System.Text.Encoding.ASCII);
             sw.Write(TextToCompress);
@@ -1464,28 +1271,28 @@ namespace Ionic.Zlib.Tests
 
             compressor.Close(); // explicitly closes compressor
             var a = ms1.ToArray();
-            TestContext.WriteLine("Compressed stream is {0} bytes long", a.Length);
+            Console.WriteLine("Compressed stream is {0} bytes long", a.Length);
 
             var ms2 = new MemoryStream(a);
             Stream decompressor  = new ZlibStream(ms2, CompressionMode.Decompress, false);
 
-            TestContext.WriteLine("using decompressor: {0}", decompressor.GetType().FullName);
+            Console.WriteLine("using decompressor: {0}", decompressor.GetType().FullName);
 
             var sr = new StreamReader(decompressor, System.Text.Encoding.ASCII);
             string DecompressedText = sr.ReadToEnd();
             sr.Close();
 
-            TestContext.WriteLine("decompressor.CanRead = {0}",decompressor.CanRead);
+            Console.WriteLine("decompressor.CanRead = {0}",decompressor.CanRead);
 
-            TestContext.WriteLine("Read {0} characters: '{1}'", DecompressedText.Length, DecompressedText);
-            TestContext.WriteLine("\n");
-            Assert.AreEqual<String>(TextToCompress, DecompressedText);
+            Console.WriteLine("Read {0} characters: '{1}'", DecompressedText.Length, DecompressedText);
+            Console.WriteLine("\n");
+            Assert.AreEqual(TextToCompress, DecompressedText);
         }
 
 
 
 
-        [TestMethod]
+        [Test]
         public void Zlib_Streams_VariousSizes()
         {
             byte[] working = new byte[WORKING_BUFFER_SIZE];
@@ -1500,14 +1307,14 @@ namespace Ionic.Zlib.Tests
                     int sz = this.rnd.Next(Sizes[p]) + Sizes[p];
                     string FileToCompress = System.IO.Path.Combine(TopLevelDir, String.Format("Zlib_Streams.{0}.{1}", sz, (m == 0) ? "txt" : "bin"));
                     Assert.IsFalse(System.IO.File.Exists(FileToCompress), "The temporary file '{0}' already exists.", FileToCompress);
-                    TestContext.WriteLine("Creating file {0}   {1} bytes", FileToCompress, sz);
+                    Console.WriteLine("Creating file {0}   {1} bytes", FileToCompress, sz);
                     if (m == 0)
                         CreateAndFillFileText(FileToCompress, sz);
                     else
                         _CreateAndFillBinary(FileToCompress, sz, false);
 
                     int crc1 = DoCrc(FileToCompress);
-                    TestContext.WriteLine("Initial CRC: 0x{0:X8}", crc1);
+                    Console.WriteLine("Initial CRC: 0x{0:X8}", crc1);
 
                     // try both GZipStream and DeflateStream
                     for (int k = 0; k < 2; k++)
@@ -1550,9 +1357,9 @@ namespace Ionic.Zlib.Tests
                                                     compressor = new System.IO.Compression.DeflateStream(raw, System.IO.Compression.CompressionMode.Compress, true);
                                                     break;
                                             }
-                                            //TestContext.WriteLine("Compress with: {0} ..", compressor.GetType().FullName);
+                                            //Console.WriteLine("Compress with: {0} ..", compressor.GetType().FullName);
 
-                                            TestContext.WriteLine("........{0} ...", System.IO.Path2.GetFileName(CompressedFile));
+                                            Console.WriteLine("........{0} ...", System.IO.Path2.GetFileName(CompressedFile));
 
                                             if (x == 0)
                                             {
@@ -1610,11 +1417,11 @@ namespace Ionic.Zlib.Tests
                                                     break;
                                             }
 
-                                            //TestContext.WriteLine("Decompress: {0} ...", decompressor.GetType().FullName);
+                                            //Console.WriteLine("Decompress: {0} ...", decompressor.GetType().FullName);
                                             string DecompressedFile =
                                                 String.Format("{0}.{1}.decompressed", CompressedFile, (j == 0) ? "Ionic" : "BCL");
 
-                                            TestContext.WriteLine("........{0} ...", System.IO.Path2.GetFileName(DecompressedFile));
+                                            Console.WriteLine("........{0} ...", System.IO.Path2.GetFileName(DecompressedFile));
 
                                             using (var s2 = System.IO.File.Create(DecompressedFile))
                                             {
@@ -1628,7 +1435,7 @@ namespace Ionic.Zlib.Tests
                                             }
 
                                             int crc2 = DoCrc(DecompressedFile);
-                                            Assert.AreEqual<UInt32>((UInt32)crc1, (UInt32)crc2);
+                                            Assert.AreEqual((UInt32)crc1, (UInt32)crc2);
 
                                         }
                                         finally
@@ -1643,7 +1450,7 @@ namespace Ionic.Zlib.Tests
                     }
                 }
             }
-            TestContext.WriteLine("Done.");
+            Console.WriteLine("Done.");
         }
 
 
@@ -1651,7 +1458,7 @@ namespace Ionic.Zlib.Tests
 
         private void PerformTrialWi8870(byte[] buffer)
         {
-            TestContext.WriteLine("Original");
+            Console.WriteLine("Original");
 
             byte[] compressedBytes = null;
             using (MemoryStream ms1 = new MemoryStream())
@@ -1663,7 +1470,7 @@ namespace Ionic.Zlib.Tests
                 compressedBytes = ms1.ToArray();
             }
 
-            TestContext.WriteLine("Compressed {0} bytes into {1} bytes",
+            Console.WriteLine("Compressed {0} bytes into {1} bytes",
                                   buffer.Length, compressedBytes.Length);
 
             byte[] decompressed= null;
@@ -1676,13 +1483,13 @@ namespace Ionic.Zlib.Tests
                 decompressed = ms2.ToArray();
             }
 
-            TestContext.WriteLine("Decompressed");
+            Console.WriteLine("Decompressed");
 
 
             bool check = true;
             if (buffer.Length != decompressed.Length)
             {
-                TestContext.WriteLine("Different lengths.");
+                Console.WriteLine("Different lengths.");
                 check = false;
             }
             else
@@ -1691,7 +1498,7 @@ namespace Ionic.Zlib.Tests
                 {
                     if (buffer[i] != decompressed[i])
                     {
-                        TestContext.WriteLine("byte {0} differs", i);
+                        Console.WriteLine("byte {0} differs", i);
                         check = false;
                         break;
                     }
@@ -1724,7 +1531,7 @@ namespace Ionic.Zlib.Tests
 
 
 
-        [TestMethod]
+        [Test]
         public void Zlib_DeflateStream_wi8870()
         {
             for (int j = 0; j < 1000; j++)
@@ -1737,25 +1544,25 @@ namespace Ionic.Zlib.Tests
 
 
 
-        [TestMethod]
+        [Test]
         public void Zlib_ParallelDeflateStream()
         {
             var sw = new System.Diagnostics.Stopwatch();
             sw.Start();
-            TestContext.WriteLine("{0}: Zlib_ParallelDeflateStream Start", sw.Elapsed);
+            Console.WriteLine("{0}: Zlib_ParallelDeflateStream Start", sw.Elapsed);
 
             int sz = 256*1024 + this.rnd.Next(120000);
             string FileToCompress = System.IO.Path.Combine(TopLevelDir, String.Format("Zlib_ParallelDeflateStream.{0}.txt", sz));
 
             CreateAndFillFileText( FileToCompress, sz);
 
-            TestContext.WriteLine("{0}: Created file: {1}", sw.Elapsed, FileToCompress );
+            Console.WriteLine("{0}: Created file: {1}", sw.Elapsed, FileToCompress );
 
             byte[] original = File.ReadAllBytes(FileToCompress);
 
             int crc1 = DoCrc(FileToCompress);
 
-            TestContext.WriteLine("{0}: Original CRC: {1:X8}", sw.Elapsed, crc1 );
+            Console.WriteLine("{0}: Original CRC: {1:X8}", sw.Elapsed, crc1 );
 
             byte[] working = new byte[WORKING_BUFFER_SIZE];
             int n = -1;
@@ -1776,7 +1583,7 @@ namespace Ionic.Zlib.Tests
                 ms1.Seek(0, SeekOrigin.Begin);
             }
 
-            TestContext.WriteLine("{0}: Compressed {1} bytes into {2} bytes", sw.Elapsed,
+            Console.WriteLine("{0}: Compressed {1} bytes into {2} bytes", sw.Elapsed,
                                   originalLength, ms1.Length);
 
             var crc = new Ionic.Crc.CRC32();
@@ -1791,21 +1598,21 @@ namespace Ionic.Zlib.Tests
                         ms2.Write(working, 0, n);
                     }
                 }
-                TestContext.WriteLine("{0}: Decompressed", sw.Elapsed);
-                TestContext.WriteLine("{0}: Decompressed length: {1}", sw.Elapsed, ms2.Length);
+                Console.WriteLine("{0}: Decompressed", sw.Elapsed);
+                Console.WriteLine("{0}: Decompressed length: {1}", sw.Elapsed, ms2.Length);
                 ms2.Seek(0, SeekOrigin.Begin);
                 crc2 = crc.GetCrc32(ms2);
                 decompressedBytes = ms2.ToArray();
-                TestContext.WriteLine("{0}: Decompressed CRC: {1:X8}", sw.Elapsed, crc2 );
+                Console.WriteLine("{0}: Decompressed CRC: {1:X8}", sw.Elapsed, crc2 );
             }
 
 
-            TestContext.WriteLine("{0}: Checking...", sw.Elapsed );
+            Console.WriteLine("{0}: Checking...", sw.Elapsed );
 
             bool check = true;
             if (originalLength != decompressedBytes.Length)
             {
-                TestContext.WriteLine("Different lengths.");
+                Console.WriteLine("Different lengths.");
                 check = false;
             }
             else
@@ -1814,7 +1621,7 @@ namespace Ionic.Zlib.Tests
                 {
                     if (original[i] != decompressedBytes[i])
                     {
-                        TestContext.WriteLine("byte {0} differs", i);
+                        Console.WriteLine("byte {0} differs", i);
                         check = false;
                         break;
                     }
@@ -1822,14 +1629,9 @@ namespace Ionic.Zlib.Tests
             }
 
             Assert.IsTrue(check,"Data check failed");
-            TestContext.WriteLine("{0}: Done...", sw.Elapsed );
+            Console.WriteLine("{0}: Done...", sw.Elapsed );
         }
-
-
-
-
-
-
+        
         private int DoCrc(string filename)
         {
             using (Stream a = File.OpenRead(filename))
@@ -1892,7 +1694,7 @@ namespace Ionic.Zlib.Tests
             }
         }
 
-        [TestMethod]
+        [Test]
         public void TestAdler32()
         {
             // create a buffer full of 0xff's
@@ -1912,7 +1714,7 @@ namespace Ionic.Zlib.Tests
                         adler = Adler.Adler32(adler, buffer, index, length);
                         index = index + chunk;
                     }
-                    Assert.AreEqual<uint>(adler, goal);
+                    Assert.AreEqual(adler, goal);
                 });
 
             testAdler(3979);
