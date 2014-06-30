@@ -1,0 +1,35 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
+    <metadata>
+        <id>Zlib.Portable</id>
+        <version>1.10.0</version>
+        <title>Zlib.Portable</title>
+        <authors>AdvancedREI,onovotny</authors>
+        <owners>AdvancedREI</owners>
+        <licenseUrl>http://en.wikipedia.org/wiki/Zlib_License</licenseUrl>
+        <projectUrl>http://dotnetzip.codeplex.com</projectUrl>
+        <requireLicenseAcceptance>true</requireLicenseAcceptance>
+        <description>A Portable Class Library port of the popular Zlib library from http://dotnetzip.codeplex.com. Works on .NET 4, 4.0.3, &amp; 4.5, Sliverlight 5, Windows Phone 8.x, Windows 8.x, Xamarin.iOS, &amp; Xamarin.Android.</description>
+        <summary>A Portable Class Library port of the popular Zlib library from http://dotnetzip.codeplex.com. Works on .NET 4, 4.0.3, &amp; 4.5, Sliverlight 5, Windows Phone 8.x, Windows 8.x, Xamarin.iOS, &amp; Xamarin.Android.</summary>
+        <releaseNotes>1.10.0
+          • Added support for Windows Phone 8.1, Xamarin.iOS, and Xamarin.Android. (Thanks Mattias Cibien!)
+          • Fixed a long-standing issue with GZip trailer validation. (Thanks Johannes Rudolph!)
+          • Removed support for Windows Phone 7.5 and Silverlight 4. (Sorry, guys!)
+
+          1.9.2
+          • Update package to include zlib license requirements.
+
+          1.9.1.2
+          • Adjustments to the NuGet package.
+
+          1.9.1
+          • Initial release.</releaseNotes>
+        <tags>zip gzip deflate dotnetzip bzip2 lzma portable compression</tags>
+    </metadata>
+    <files>
+        <file src="Zlib.Portable\bin\Release\Zlib.Portable.dll" target="lib\portable-net4+sl5+wp8+win8+wpa81+MonoTouch+MonoAndroid\" />
+        <file src="Zlib.Portable\bin\Release\Zlib.Portable.pdb" target="lib\portable-net4+sl5+wp8+win8+wpa81+MonoTouch+MonoAndroid\" />
+        <file src="Zlib.Portable\bin\Release\Zlib.Portable.xml" target="lib\portable-net4+sl5+wp8+win8+wpa81+MonoTouch+MonoAndroid\" />
+        <file src="Zlib.Portable\**\*.cs" exclude="**\obj\**\*.*" target="src" />
+    </files>
+</package>
