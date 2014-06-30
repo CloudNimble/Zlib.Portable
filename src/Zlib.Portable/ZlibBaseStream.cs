@@ -51,6 +51,8 @@ namespace Ionic.Zlib
 
         // workitem 7159
         Ionic.Crc.CRC32 crc;
+        bool _nomoreinput = false;
+
         protected internal string _GzipFileName;
         protected internal string _GzipComment;
         protected internal DateTime _GzipMtime;
@@ -78,7 +80,6 @@ namespace Ionic.Zlib
                 this.crc = new Ionic.Crc.CRC32();
             }
         }
-
 
         protected internal bool _wantCompress
         {
@@ -238,40 +239,9 @@ namespace Ionic.Zlib
                         if (_z.TotalBytesOut == 0L)
                             return;
 
-                        // Read and potentially verify the GZIP trailer:
+
+                        // Do not validate the GZIP trailer, the System.Io.Compression library doesn't do it as well
                         // CRC32 and size mod 2^32
-                        byte[] trailer = new byte[8];
-
-                        // workitems 8679 & 12554
-                        if (_z.AvailableBytesIn < 8)
-                        {
-                            // Make sure we have read to the end of the stream
-                            Array.Copy(_z.InputBuffer, _z.NextIn, trailer, 0, _z.AvailableBytesIn);
-                            int bytesNeeded = 8 - _z.AvailableBytesIn;
-                            int bytesRead = _stream.Read(trailer,
-                                                         _z.AvailableBytesIn,
-                                                         bytesNeeded);
-                            if (bytesNeeded != bytesRead)
-                            {
-                                throw new ZlibException(String.Format("Missing or incomplete GZIP trailer. Expected 8 bytes, got {0}.",
-                                                                      _z.AvailableBytesIn + bytesRead));
-                            }
-                        }
-                        else
-                        {
-                            Array.Copy(_z.InputBuffer, _z.NextIn, trailer, 0, trailer.Length);
-                        }
-
-                        Int32 crc32_expected = BitConverter.ToInt32(trailer, 0);
-                        Int32 crc32_actual = crc.Crc32Result;
-                        Int32 isize_expected = BitConverter.ToInt32(trailer, 4);
-                        Int32 isize_actual = (Int32)(_z.TotalBytesOut & 0x00000000FFFFFFFF);
-
-                        if (crc32_actual != crc32_expected)
-                            throw new ZlibException(String.Format("Bad CRC32 in GZIP trailer. (actual({0:X8})!=expected({1:X8}))", crc32_actual, crc32_expected));
-
-                        if (isize_actual != isize_expected)
-                            throw new ZlibException(String.Format("Bad size in GZIP trailer. (actual({0})!=expected({1}))", isize_actual, isize_expected));
 
                     }
                     else
@@ -281,7 +251,6 @@ namespace Ionic.Zlib
                 }
             }
         }
-
 
         private void end()
         {
@@ -328,23 +297,6 @@ namespace Ionic.Zlib
         {
             _stream.SetLength(value);
         }
-
-
-#if NOT
-        public int Read()
-        {
-            if (Read(_buf1, 0, 1) == 0)
-                return 0;
-            // calculate CRC after reading
-            if (crc!=null)
-                crc.SlurpBlock(_buf1,0,1);
-            return (_buf1[0] & 0xFF);
-        }
-#endif
-
-        private bool nomoreinput = false;
-
-
 
         private string ReadZeroTerminatedString()
         {
@@ -443,7 +395,7 @@ namespace Ionic.Zlib
                 throw new ZlibException("Cannot Read after Writing.");
 
             if (count == 0) return 0;
-            if (nomoreinput && _wantCompress) return 0;  // workitem 8557
+            if (_nomoreinput && _wantCompress) return 0;  // workitem 8557
             if (buffer == null) throw new ArgumentNullException("buffer");
             if (count < 0) throw new ArgumentOutOfRangeException("count");
             if (offset < buffer.GetLowerBound(0)) throw new ArgumentOutOfRangeException("offset");
@@ -464,13 +416,13 @@ namespace Ionic.Zlib
             do
             {
                 // need data in _workingBuffer in order to deflate/inflate.  Here, we check if we have any.
-                if ((_z.AvailableBytesIn == 0) && (!nomoreinput))
+                if ((_z.AvailableBytesIn == 0) && (!_nomoreinput))
                 {
                     // No data available, so try to Read data from the captive stream.
                     _z.NextIn = 0;
                     _z.AvailableBytesIn = _stream.Read(_workingBuffer, 0, _workingBuffer.Length);
                     if (_z.AvailableBytesIn == 0)
-                        nomoreinput = true;
+                        _nomoreinput = true;
 
                 }
                 // we have data in InputBuffer; now compress or decompress as appropriate
@@ -478,17 +430,17 @@ namespace Ionic.Zlib
                     ? _z.Deflate(_flushMode)
                     : _z.Inflate(_flushMode);
 
-                if (nomoreinput && (rc == ZlibConstants.Z_BUF_ERROR))
+                if (_nomoreinput && (rc == ZlibConstants.Z_BUF_ERROR))
                     return 0;
 
                 if (rc != ZlibConstants.Z_OK && rc != ZlibConstants.Z_STREAM_END)
                     throw new ZlibException(String.Format("{0}flating:  rc={1}  msg={2}", (_wantCompress ? "de" : "in"), rc, _z.Message));
 
-                if ((nomoreinput || rc == ZlibConstants.Z_STREAM_END) && (_z.AvailableBytesOut == count))
+                if ((_nomoreinput || rc == ZlibConstants.Z_STREAM_END) && (_z.AvailableBytesOut == count))
                     break; // nothing more to read
             }
             //while (_z.AvailableBytesOut == count && rc == ZlibConstants.Z_OK);
-            while (_z.AvailableBytesOut > 0 && !nomoreinput && rc == ZlibConstants.Z_OK);
+            while (_z.AvailableBytesOut > 0 && !_nomoreinput && rc == ZlibConstants.Z_OK);
 
 
             // workitem 8557
@@ -501,7 +453,7 @@ namespace Ionic.Zlib
                 }
 
                 // are we completely done reading?
-                if (nomoreinput)
+                if (_nomoreinput)
                 {
                     // and in compression?
                     if (_wantCompress)
