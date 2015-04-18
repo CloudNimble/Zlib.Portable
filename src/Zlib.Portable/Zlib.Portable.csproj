@@ -54,6 +54,18 @@
     <WarningLevel>4</WarningLevel>
     <DocumentationFile>bin\Release\Zlib.Portable.xml</DocumentationFile>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release-Signed|AnyCPU'">
+    <OutputPath>bin\Release-Signed\</OutputPath>
+    <DefineConstants>TRACE;SIGNED</DefineConstants>
+    <DocumentationFile>bin\Release-Signed\Zlib.Portable.xml</DocumentationFile>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <AssemblyOriginatorKeyFile>..\Zlib.Portable.snk</AssemblyOriginatorKeyFile>
+    <SignAssembly>true</SignAssembly>
+  </PropertyGroup>
   <ItemGroup>
     <!-- A reference to the entire .NET Framework is automatically included -->
     <BootstrapperPackage Include="Microsoft.Net.Client.3.5">
@@ -84,6 +96,11 @@
     <Compile Include="ZlibCodec.cs" />
     <Compile Include="ZlibConstants.cs" />
     <Compile Include="ZlibStream.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\Zlib.Portable.snk">
+      <Link>Zlib.Portable.snk</Link>
+    </None>
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

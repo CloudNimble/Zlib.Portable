@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
     <metadata>
-        <id>Zlib.Portable</id>
+        <id>Zlib.Portable.Signed</id>
         <version>1.11.0-beta1</version>
         <title>Zlib.Portable</title>
         <authors>AdvancedREI,onovotny</authors>
@@ -28,12 +28,13 @@
   
   1.9.1
   • Initial release.</releaseNotes>
+
         <tags>zip gzip deflate dotnetzip bzip2 lzma portable compression</tags>
     </metadata>
     <files>
-        <file src="Zlib.Portable\bin\Release\Zlib.Portable.dll" target="lib\portable-net4+sl5+wp8+win8+wpa81+MonoTouch+MonoAndroid\" />
-        <file src="Zlib.Portable\bin\Release\Zlib.Portable.pdb" target="lib\portable-net4+sl5+wp8+win8+wpa81+MonoTouch+MonoAndroid\" />
-        <file src="Zlib.Portable\bin\Release\Zlib.Portable.xml" target="lib\portable-net4+sl5+wp8+win8+wpa81+MonoTouch+MonoAndroid\" />
+        <file src="Zlib.Portable\bin\Release-Signed\Zlib.Portable.dll" target="lib\portable-net4+sl5+wp8+win8+wpa81+MonoTouch+MonoAndroid\" />
+        <file src="Zlib.Portable\bin\Release-Signed\Zlib.Portable.pdb" target="lib\portable-net4+sl5+wp8+win8+wpa81+MonoTouch+MonoAndroid\" />
+        <file src="Zlib.Portable\bin\Release-Signed\Zlib.Portable.xml" target="lib\portable-net4+sl5+wp8+win8+wpa81+MonoTouch+MonoAndroid\" />
         <file src="Zlib.Portable\**\*.cs" exclude="**\obj\**\*.*" target="src" />
     </files>
 </package>
