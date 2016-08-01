@@ -32,9 +32,9 @@
         <tags>zip gzip deflate dotnetzip bzip2 lzma portable compression</tags>
     </metadata>
     <files>
-        <file src="Zlib.Portable\bin\Release-Signed\Zlib.Portable.dll" target="lib\portable-net4+sl5+wp8+win8+wpa81+MonoTouch+MonoAndroid\" />
-        <file src="Zlib.Portable\bin\Release-Signed\Zlib.Portable.pdb" target="lib\portable-net4+sl5+wp8+win8+wpa81+MonoTouch+MonoAndroid\" />
-        <file src="Zlib.Portable\bin\Release-Signed\Zlib.Portable.xml" target="lib\portable-net4+sl5+wp8+win8+wpa81+MonoTouch+MonoAndroid\" />
+        <file src="Zlib.Portable\bin\Release-Signed\Zlib.Portable.dll" target="lib\portable-net40+sl50+win+wpa81+wp80+MonoAndroid10+MonoTouch10\" />
+        <file src="Zlib.Portable\bin\Release-Signed\Zlib.Portable.pdb" target="lib\portable-net40+sl50+win+wpa81+wp80+MonoAndroid10+MonoTouch10\" />
+        <file src="Zlib.Portable\bin\Release-Signed\Zlib.Portable.xml" target="lib\portable-net40+sl50+win+wpa81+wp80+MonoAndroid10+MonoTouch10\" />
         <file src="Zlib.Portable\**\*.cs" exclude="**\obj\**\*.*" target="src" />
     </files>
 </package>
