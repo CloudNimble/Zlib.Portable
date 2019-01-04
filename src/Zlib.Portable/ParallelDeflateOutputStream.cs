@@ -740,7 +740,11 @@ namespace Ionic.Zlib
         /// You must call Close on the stream to guarantee that all of the data written in has
         /// been compressed, and the compressed data has been written out.
         /// </remarks>
+#if NETSTANDARD2_0
+        public override void Close()
+#else
         public void Close()
+#endif
         {
             TraceOutput(TraceBits.Session, "Close {0:X8}", this.GetHashCode());
 

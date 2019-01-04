@@ -267,8 +267,11 @@ namespace Ionic.Zlib
             _z = null;
         }
 
-
+#if NETSTANDARD2_0
+        public override void Close()
+#else
         public void Close()
+#endif
         {
             if (_stream == null) return;
             try
