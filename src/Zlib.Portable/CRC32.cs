@@ -27,7 +27,6 @@
 
 
 using System;
-using Interop = System.Runtime.InteropServices;
 
 namespace Ionic.Crc
 {

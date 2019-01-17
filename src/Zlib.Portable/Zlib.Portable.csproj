@@ -10,8 +10,8 @@
     <Copyright>Copyright © 2006-2011 Dino Chiesa. Ported by Robert McLaws.</Copyright>
     <AssemblyVersion>1.11.0.0</AssemblyVersion>
     <FileVersion>1.11.0.0</FileVersion>
-    <SignAssembly>true</SignAssembly>
-    <AssemblyOriginatorKeyFile>C:\Users\conra_000\Desktop\Zlib.Portable\src\Zlib.Portable.snk</AssemblyOriginatorKeyFile>
+    <SignAssembly>false</SignAssembly>
+    <AssemblyOriginatorKeyFile>Zlib.Portable.snk</AssemblyOriginatorKeyFile>
     <DelaySign>false</DelaySign>
   </PropertyGroup>
 
